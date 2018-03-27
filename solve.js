@@ -17,4 +17,5 @@ function alternate(a){
             w = w + getValor(a,j,i);
         }
     }
+    return w;
 }
