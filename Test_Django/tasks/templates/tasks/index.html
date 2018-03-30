@@ -1,0 +1,84 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!-- Compiled and minified CSS -->
+  	<link rel="stylesheet" href="{% static 'tasks/materialize.min.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'tasks/style.css' %}" />
+
+  <!-- Compiled and minified JavaScript -->
+    <script type="text/javascript" src="{% static 'tasks/jquery-2.1.1.min.js'%}"></script>
+    <script src="{% static 'tasks/materialize.min.js' %}"></script>
+
+    <script src="{% static 'tasks/vue.js' %}"></script>
+    <script src="{% static 'tasks/vue-resource.min.js' %}"></script>
+</head>
+<body>
+
+
+ <div id="app">
+    <ul>
+        <li v-for="user in users">
+
+        	<div class="collapsible-header">${ user.username }$</div>
+
+                <div class="collection" v-for="task in user.tasks">
+                    <a href="#!" v-on:click="postVote" :p-id="user.id" :c-id="task.id" class="collection-item">
+                        <span class="new badge" data-badge-caption="votes" style="margin-top: calc(.75rem - 11px)">${ task.check }$</span>
+                        ${ task.name }$
+                    </a>
+                </div>
+        	    
+
+
+        </li>
+    </ul>
+</div>
+
+<script>
+   new Vue({
+        delimiters: ['${', '}$'],
+        el: '#app',
+        data: {
+            tasks: [],
+            users: []
+
+        },
+        http: {
+            root: 'http://localhost:8000',
+            headers: {
+              Authorization: '31613b73d8c9c7a260daf04431b8ba3d84a294e7'
+            }
+        },
+        methods: {
+            getTasks: function () {
+                this.$http.get('api/users/').then(function (data,status,request) {
+                //if (status == 200) {
+                    this.users = data.body.results;
+                 //}   
+                })
+            },             
+            postVote: function (event) {
+                var qID = event.target.getAttribute("p-id");
+                var cID = event.target.getAttribute("c-id");
+                this.$http.post('api/tasks/check', {'id': cID}).then(function (response) {
+
+                    var task = this.users[qID-1].choices.filter(function ( obj ) {
+                        return parseInt(obj.id) === parseInt(cID);
+                    })[0];
+
+                    task.check = response.data.check;
+                })
+            }    
+        },
+        mounted: function () {
+            this.getTasks();
+        }
+    })
+</script>
+
+</body>
+</html>

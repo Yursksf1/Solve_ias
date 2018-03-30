@@ -22,6 +22,30 @@ CHOICE_TYPE = (
     ('2', 'Meeting'),
 )
 
+def getLazyTime(total_sec):
+    dias_delta = 60*60*24
+    dias = total_sec // dias_delta
+    if dias:
+        return str(dias) + ' d' 
+    
+    hora_delta = 60*60
+    total_sec = total_sec - dias*dias_delta
+    horas = total_sec // hora_delta    
+    if horas:
+        return str(horas) + ' h'
+    
+    minu_delta = 60
+    total_sec = total_sec - horas*hora_delta
+    minutes = total_sec // minu_delta
+    if minutes:
+        return str(minutes) + ' m'
+
+    total_sec = total_sec - minutes*minu_delta
+    sec = total_sec    
+    if sec:
+        return str(sec) + ' s'
+    return 'now'
+
 class Task(models.Model):
     check = models.BooleanField("Terminado", default=False)
     name = models.CharField("Nombre de Tarea", max_length=200)
@@ -36,9 +60,9 @@ class Task(models.Model):
     priority = models.CharField("Prioridad", max_length=1,
                                   choices=CHOICE_PRYORITY,
                                   default=5)
-    observation = models.CharField("Observación", max_length=200)
-    date_start = models.DateTimeField('Fecha de Inicio')
-    date_end = models.DateTimeField('Fecha de Finalización')
+    observation = models.CharField("Observación", max_length=200, blank=True)
+    date_start = models.DateTimeField('Fecha de Inicio', default=timezone.now())
+    date_end = models.DateTimeField('Fecha de Finalización', default=timezone.now() + datetime.timedelta(minutes=30) )
 
     def __str__(self):
         return self.name
@@ -46,6 +70,23 @@ class Task(models.Model):
     def is_pending(self):
         return not self.check
     is_pending.boolean = True
+
+    def duration_lazy(self):
+        total_sec = (self.date_end - self.date_start).total_seconds()
+        duration = getLazyTime(total_sec)
+        return duration    
+
+    def duration(self):
+        total_sec = (self.date_end - self.date_start).total_seconds()
+        return total_sec
+    #duration = datetime.timedelta(minutes=30).total_seconds()
+
+    def save(self, *args, **kwargs):
+        if self.date_start<self.date_end:
+            super(Task, self).save(*args, **kwargs) # Call the "real" save() method.
+        else: 
+            raise ValidationError("Overlapping dates")
+        
 
 
 
